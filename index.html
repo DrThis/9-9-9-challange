@@ -139,53 +139,64 @@
     <div class="divider"></div>
     <div class="field-label" style="margin-bottom:10px">Select difficulty</div>
 
+    <!-- Collegiate card -->
     <div class="diff-card" onclick="selectDiff('collegiate')" id="dc-collegiate">
       <div class="diff-badge" style="background:#E6F1FB;color:#185FA5">Collegiate</div>
       <div class="diff-title">5+4 or 4+5</div>
-      <div class="diff-desc">9 innings · Mix of 9 total (dogs + beers) · Stadium standard pours · Free pace</div>
-    </div>
-    <div class="diff-card" onclick="selectDiff('minors')" id="dc-minors">
-      <div class="diff-badge" style="background:#EAF3DE;color:#3B6D11">Minors</div>
-      <div class="diff-title">9 dogs · 108oz</div>
-      <div class="diff-desc">9 innings · 9 hot dogs · 108oz total beer · Free pace + pace advisor</div>
-    </div>
-    <div class="diff-card" onclick="selectDiff('majors')" id="dc-majors">
-      <div class="diff-badge" style="background:#FAEEDA;color:#854F0B">Majors</div>
-      <div class="diff-title">9 dogs · 9 beers</div>
-      <div class="diff-desc">1 dog + 1 beer per inning · Stadium standard only — pick your cup size at the start</div>
-    </div>
-
-    <div id="diff-extra" style="display:none; margin-top:8px;">
-      <div id="opt-collegiate" style="display:none;">
-        <div class="field-label" style="margin-bottom:8px">Choose your split</div>
-        <div class="split-btn-group">
-          <button class="split-btn" data-split="5d4b" onclick="selectSplit('5d4b')">5 dogs · 4 beers</button>
-          <button class="split-btn" data-split="4d5b" onclick="selectSplit('4d5b')">4 dogs · 5 beers</button>
-          <button class="split-btn" data-split="random" onclick="selectSplit('random')">Random</button>
+      <div id="dc-collegiate-detail" style="display:none;margin-top:10px;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px">
+        <div class="diff-desc" style="margin-bottom:6px">9 innings · Mix of 9 total (dogs + beers) · Free pace</div>
+        <div class="field-label" style="margin-bottom:8px;margin-top:8px">Choose your split</div>
+        <div class="split-btn-group" style="flex-wrap:wrap;justify-content:flex-start" onclick="event.stopPropagation()">
+          <button class="split-btn" data-split="5d4b" onclick="selectSplit('5d4b')" style="flex:0 0 auto">5 dogs · 4 beers</button>
+          <button class="split-btn" data-split="4d5b" onclick="selectSplit('4d5b')" style="flex:0 0 auto">4 dogs · 5 beers</button>
+          <button class="split-btn" data-split="random" onclick="selectSplit('random')" style="flex:0 0 auto">Random</button>
         </div>
         <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:2px" id="split-selected">No split selected yet.</div>
       </div>
-      <div id="opt-minors" style="display:none;">
-        <div class="field-label" style="margin-bottom:8px">Stadium cup sizes (for quick logging)</div>
-        <div id="cup-list"></div>
-        <button class="btn small" onclick="addCup()" style="margin-bottom:10px">+ add size</button>
+    </div>
+
+    <!-- Minors card -->
+    <div class="diff-card" onclick="selectDiff('minors')" id="dc-minors">
+      <div class="diff-badge" style="background:#EAF3DE;color:#3B6D11">Minors</div>
+      <div class="diff-title">9 dogs · 108oz beer</div>
+      <div id="dc-minors-detail" style="display:none;margin-top:10px;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px">
+        <div class="diff-desc" style="margin-bottom:6px">9 innings · 9 dogs · 108oz total beer · Free pace + pace advisor</div>
+        <div class="field-label" style="margin-bottom:8px;margin-top:8px">Stadium cup sizes (for quick logging)</div>
+        <div id="cup-list" onclick="event.stopPropagation()"></div>
+        <button class="btn small" onclick="event.stopPropagation();addCup()" style="margin-bottom:4px">+ add size</button>
       </div>
-      <div id="opt-majors" style="display:none;">
-        <div class="field-label" style="margin-bottom:8px">Cup size for this run (oz)</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="maj-size-btns"></div>
-        <div style="display:flex;gap:8px;align-items:center">
+    </div>
+
+    <!-- Majors card -->
+    <div class="diff-card" onclick="selectDiff('majors')" id="dc-majors">
+      <div class="diff-badge" style="background:#FAEEDA;color:#854F0B">Majors</div>
+      <div class="diff-title">9 dogs · 9 beers</div>
+      <div id="dc-majors-detail" style="display:none;margin-top:10px;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px">
+        <div class="diff-desc" style="margin-bottom:6px">1 dog + 1 beer per inning · Stadium standard only</div>
+        <div class="field-label" style="margin-bottom:8px;margin-top:8px">Cup size for this run (oz)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="maj-size-btns" onclick="event.stopPropagation()"></div>
+        <div style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
           <input class="field-input" id="maj-custom-sz" type="number" placeholder="other oz" style="width:110px" min="1" max="200"/>
-          <button class="btn small" onclick="selectMajorsCupCustom()">use this</button>
+          <button class="btn small" onclick="event.stopPropagation();selectMajorsCupCustom()">use this</button>
         </div>
         <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:6px" id="maj-sz-selected"></div>
       </div>
+    </div>
+
+    <!-- keep old diff-extra as empty hidden shell so existing JS refs don't break -->
+    <div id="diff-extra" style="display:none">
+      <div id="opt-collegiate" style="display:none"></div>
+      <div id="opt-minors" style="display:none"></div>
+      <div id="opt-majors" style="display:none"></div>
     </div>
 
     <div class="divider"></div>
     <div id="s-diff-summary" style="display:none; text-align:center; margin-bottom:12px; padding:10px 14px; background:var(--color-background-secondary); border-radius:var(--border-radius-md);">
       <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--color-text-tertiary);">Selected: </span><span id="s-diff-summary-text" style="font-size:13px;font-weight:500;color:var(--color-text-primary);"></span>
     </div>
-    <button class="btn primary" onclick="startRun()">Start challenge</button>
+    <div id="start-challenge-box" style="background:transparent;border-radius:var(--border-radius-lg);padding:14px;margin-top:4px;transition:background 0.2s">
+      <button class="btn primary" onclick="startRun()" style="margin-bottom:0">Start challenge</button>
+    </div>
   </div>
 
   <div id="screen-run" class="screen">
@@ -329,6 +340,11 @@ function goSetup() {
   document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('selected'));
   document.querySelectorAll('.split-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('diff-extra').style.display='none';
+  ['collegiate','minors','majors'].forEach(x => {
+    const det = document.getElementById('dc-'+x+'-detail');
+    if (det) det.style.display = 'none';
+  });
+  document.getElementById('start-challenge-box').style.background = 'transparent';
   show('screen-setup');
 }
 
@@ -339,15 +355,37 @@ function checkResume() {
 }
 
 function selectDiff(d) {
+  const diffColors = {
+    collegiate: '#E6F1FB',
+    minors: '#EAF3DE',
+    majors: '#FAEEDA'
+  };
+  // Toggle: clicking the already-selected diff deselects it
+  if (S.diff === d) {
+    S.diff = null;
+    document.getElementById('dc-'+d).classList.remove('selected');
+    document.getElementById('dc-'+d+'-detail').style.display = 'none';
+    document.getElementById('start-challenge-box').style.background = 'transparent';
+    updateDiffSummary();
+    return;
+  }
   S.diff = d;
-  document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('selected'));
+  // Collapse all detail panels, deselect all cards
+  ['collegiate','minors','majors'].forEach(x => {
+    document.getElementById('dc-'+x).classList.remove('selected');
+    document.getElementById('dc-'+x+'-detail').style.display = 'none';
+  });
+  // Expand the chosen card
   document.getElementById('dc-'+d).classList.add('selected');
-  document.getElementById('diff-extra').style.display = 'block';
-  document.getElementById('opt-collegiate').style.display = d==='collegiate' ? 'block' : 'none';
-  document.getElementById('opt-minors').style.display = d==='minors' ? 'block' : 'none';
-  document.getElementById('opt-majors').style.display = d==='majors' ? 'block' : 'none';
+  document.getElementById('dc-'+d+'-detail').style.display = 'block';
+  document.getElementById('start-challenge-box').style.background = diffColors[d];
   if (d==='minors') renderCups();
   if (d==='majors') renderMajorSizeBtns();
+  // Reset sub-selections when switching difficulty
+  S.split = null;
+  document.querySelectorAll('.split-btn').forEach(b => b.classList.remove('selected'));
+  const lbl = document.getElementById('split-selected');
+  if (lbl) lbl.textContent = 'No split selected yet.';
   updateDiffSummary();
 }
 
