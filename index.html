@@ -163,7 +163,10 @@
         <div class="diff-desc" style="margin-bottom:6px">9 innings · 9 dogs · 108oz total beer · Free pace + pace advisor</div>
         <div class="field-label" style="margin-bottom:8px;margin-top:8px">Stadium cup sizes (for quick logging)</div>
         <div id="cup-list" onclick="event.stopPropagation()"></div>
-        <button class="btn small" onclick="event.stopPropagation();addCup()" style="margin-bottom:4px">+ add size</button>
+        <div style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
+          <input class="field-input" id="min-add-sz" type="number" placeholder="oz" style="width:90px" min="1" max="200"/>
+          <button class="btn small" onclick="event.stopPropagation();addCup()">+ add size</button>
+        </div>
       </div>
     </div>
 
@@ -174,10 +177,8 @@
       <div id="dc-majors-detail" style="display:none;margin-top:10px;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px">
         <div class="diff-desc" style="margin-bottom:6px">1 dog + 1 beer per inning · Stadium standard only</div>
         <div class="field-label" style="margin-bottom:8px;margin-top:8px">Cup size for this run (oz)</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="maj-size-btns" onclick="event.stopPropagation()"></div>
         <div style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
-          <input class="field-input" id="maj-custom-sz" type="number" placeholder="other oz" style="width:110px" min="1" max="200"/>
-          <button class="btn small" onclick="event.stopPropagation();selectMajorsCupCustom()">use this</button>
+          <input class="field-input" id="maj-custom-sz" type="number" placeholder="oz" style="width:90px" min="1" max="200" oninput="selectMajorsCupCustom()"/>
         </div>
         <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:6px" id="maj-sz-selected"></div>
       </div>
@@ -309,7 +310,7 @@ const INN_NAMES = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
 const COMMON_SIZES = [12, 16, 20, 24];
 
 let S = {
-  diff: null, split: null, cups: [12,16,20], majorsCupOz: null,
+  diff: null, split: null, cups: [], majorsCupOz: null,
   stadium:'', home:'', away:'',
   viewInning: 1,
   innings: {},
@@ -333,7 +334,7 @@ function goHome() { show('screen-home'); }
 function goHistory() { renderHistory(); show('screen-history'); }
 
 function goSetup() {
-  S.diff=null; S.split=null; S.cups=[12,16,20]; S.majorsCupOz=null;
+  S.diff=null; S.split=null; S.cups=[]; S.majorsCupOz=null;
   document.getElementById('s-stadium').value='';
   document.getElementById('s-home').value='';
   document.getElementById('s-away').value='';
@@ -380,7 +381,6 @@ function selectDiff(d) {
   document.getElementById('dc-'+d+'-detail').style.display = 'block';
   document.getElementById('start-challenge-box').style.background = diffColors[d];
   if (d==='minors') renderCups();
-  if (d==='majors') renderMajorSizeBtns();
   // Reset sub-selections when switching difficulty
   S.split = null;
   document.querySelectorAll('.split-btn').forEach(b => b.classList.remove('selected'));
@@ -421,29 +421,17 @@ function renderCups() {
     </div>`
   ).join('');
 }
-function addCup() { S.cups.push(12); renderCups(); }
-
-function renderMajorSizeBtns() {
-  const el = document.getElementById('maj-size-btns');
-  if (!el) return;
-  el.innerHTML = COMMON_SIZES.map(sz =>
-    `<button class="split-btn${S.majorsCupOz===sz?' selected':''}" style="flex:0 0 auto;padding:8px 14px" onclick="selectMajorsCup(${sz})">${sz}oz</button>`
-  ).join('');
-  const lbl = document.getElementById('maj-sz-selected');
-  if (lbl) lbl.textContent = S.majorsCupOz ? `Selected: ${S.majorsCupOz}oz per beer` : 'No size selected yet.';
-}
-
-function selectMajorsCup(oz) {
-  S.majorsCupOz = oz;
-  document.getElementById('maj-custom-sz').value = '';
-  renderMajorSizeBtns();
+function addCup() {
+  const v = parseInt(document.getElementById('min-add-sz').value);
+  if (!v || v <= 0) { alert('Enter a valid oz.'); return; }
+  S.cups.push(v);
+  document.getElementById('min-add-sz').value = '';
+  renderCups();
 }
 
 function selectMajorsCupCustom() {
   const v = parseInt(document.getElementById('maj-custom-sz').value);
-  if (!v || v<=0) { alert('Enter a valid oz.'); return; }
-  S.majorsCupOz = v;
-  renderMajorSizeBtns();
+  S.majorsCupOz = (v && v > 0) ? v : null;
 }
 
 function totalDogs() { return Object.values(S.innings).reduce((a,i) => a+i.dogs, 0); }
