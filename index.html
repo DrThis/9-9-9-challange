@@ -14,7 +14,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   #app { min-height: 600px; background: var(--color-background-primary); color: var(--color-text-primary); font-family: Georgia, serif; }
-  .screen { display: none; padding: 20px 16px; }
+  .screen { display: none; padding: 20px 16px; max-width: 480px; margin: 0 auto; }
   .screen.active { display: block; }
   .brand { text-align: center; padding: 28px 0 20px; }
   .brand-num { font-size: 52px; font-weight: 700; letter-spacing: -2px; line-height: 1; }
@@ -636,48 +636,50 @@ function renderAdvisor() {
 }
 
 function buildEndurance(rem, innsLeft, cups) {
-  // Figure out the minimum number of innings we need to drink in
-  // to cover rem oz using the largest available cup.
-  // Then spread those drink-innings evenly across all innings.
-  const largest = cups[cups.length - 1];
-  const drinkSlotsNeeded = Math.ceil(rem / largest);
+  // Endurance: use the smallest pre-set cup, drink the fewest innings possible,
+  // spread those drink-innings as evenly as possible across all innings.
+  // e.g. 108oz rem, 9 innings, cups [16,20] → smallest=16, ceil(108/16)=7 slots
+  // spread 7 in 9 → drink 1st,2nd,4th,5th,6th,8th,9th, skip 3rd and 7th.
+  const sortedAsc = [...cups].sort((a,b) => a-b);
+  const smallest = sortedAsc[0];
+  const drinkSlotsNeeded = Math.ceil(rem / smallest);
   const startInn = S.viewInning;
 
-  // Space drinkSlotsNeeded slots evenly across innsLeft innings.
-  // e.g. 3 drinks in 9 innings → drink at slots 0, 3, 6 (every 3rd)
-  // Use round-based spacing: place drink at slot round(i * innsLeft / drinkSlotsNeeded)
+  // Space drinkSlotsNeeded slots as evenly as possible across innsLeft.
+  // Use Bresenham-style even distribution.
   const drinkSlots = new Set();
-  for (let i = 0; i < drinkSlotsNeeded; i++) {
-    drinkSlots.add(Math.round(i * (innsLeft - 1) / Math.max(drinkSlotsNeeded - 1, 1)));
+  if (drinkSlotsNeeded >= innsLeft) {
+    // Must drink every inning
+    for (let i = 0; i < innsLeft; i++) drinkSlots.add(i);
+  } else {
+    for (let i = 0; i < drinkSlotsNeeded; i++) {
+      drinkSlots.add(Math.round(i * (innsLeft - 1) / (drinkSlotsNeeded - 1 || 1)));
+    }
   }
-  // If only 1 drink needed, put it last
-  if (drinkSlotsNeeded === 1) { drinkSlots.clear(); drinkSlots.add(innsLeft - 1); }
 
   const plan = [];
   let left = rem;
-  let drinksLeft = drinkSlotsNeeded;
 
   for (let slot = 0; slot < innsLeft; slot++) {
     const inn = startInn + slot;
-    if (drinkSlots.has(slot)) {
-      const innsRemainingDrinks = drinksLeft;
-      const minPerInn = left / innsRemainingDrinks;
-      const pick = cups.find(c => c >= minPerInn) || largest;
-      const actual = Math.min(pick, left);
-      plan.push({ inn, oz: actual });
-      left = Math.max(0, left - actual);
-      drinksLeft--;
+    if (drinkSlots.has(slot) && left > 0) {
+      plan.push({ inn, oz: smallest });
+      left = Math.max(0, left - smallest);
     } else {
       plan.push({ inn, skip: true });
     }
   }
-  if (left > 1) plan.push({ extra: Math.round(left) });
   return formatPlan(plan);
 }
 
 function buildFrontLoad(rem, innsLeft, cups) {
-  // Front-load: drink biggest cups as early as possible, skip remaining innings
-  const largest = cups[cups.length - 1];
+  // Front-load: drink biggest pre-set cups as early as possible.
+  // Only ever suggest sizes the user pre-entered.
+  // Pick the smallest pre-set cup that is >= remaining oz (least overage),
+  // or the largest cup if all are smaller (unavoidable overage).
+  // Once target is met, all remaining innings are skipped.
+  const sortedAsc = [...cups].sort((a,b) => a-b);
+  const largest = sortedAsc[sortedAsc.length - 1];
   const plan = [];
   let left = rem;
   const startInn = S.viewInning;
@@ -688,14 +690,12 @@ function buildFrontLoad(rem, innsLeft, cups) {
       plan.push({ inn, skip: true });
       continue;
     }
-    // Pick the biggest cup that doesn't overshoot by too much
-    const sorted = [...cups].sort((a,b) => b-a);
-    let pick = sorted.find(c => c <= left + 2) || cups[0];
-    const actual = Math.min(pick, left);
-    plan.push({ inn, oz: actual });
-    left = Math.max(0, left - actual);
+    // Find smallest cup that covers what's left (minimize overshoot),
+    // fall back to largest if nothing covers it exactly.
+    const pick = sortedAsc.find(c => c >= left) || largest;
+    plan.push({ inn, oz: pick });
+    left = Math.max(0, left - pick);
   }
-  if (left > 1) plan.push({ extra: Math.round(left) });
   return formatPlan(plan);
 }
 
@@ -954,18 +954,72 @@ function renderHistory() {
     return `<div class="history-item" id="hist-item-${h.id}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:15px;font-weight:500">${h.home} vs ${h.away}</div>
+          <div style="font-size:15px;font-weight:500">${h.home} vs ${h.away}${h.score?` <span style="font-size:13px;font-weight:400;color:var(--color-text-secondary)">(${h.score})</span>`:''}</div>
           <div class="history-meta">${h.stadium} · ${h.date}</div>
-          <div class="history-meta" style="margin-top:2px">${diffLabel[h.diff]||h.diff} · ${stats}${h.score?' · '+h.score:''}</div>
+          <div class="history-meta" style="margin-top:2px">${diffLabel[h.diff]||h.diff} · ${stats}</div>
           ${h.notes?`<div class="history-meta" style="margin-top:4px;font-style:italic">"${h.notes}"</div>`:''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
           ${badge}
+          <button class="btn small" onclick="toggleEditRun(${h.id})" style="padding:4px 10px;font-size:11px">edit</button>
           <button class="btn small danger" onclick="confirmDeleteRun(${h.id})" style="padding:4px 10px;font-size:11px">delete</button>
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleEditRun(id) {
+  const existing = document.getElementById('edit-form-' + id);
+  if (existing) { existing.remove(); return; }
+  const hist = getHist();
+  const h = hist.find(x => x.id === id);
+  if (!h) return;
+  const item = document.getElementById('hist-item-' + id);
+  if (!item) return;
+  const div = document.createElement('div');
+  div.id = 'edit-form-' + id;
+  div.style.cssText = 'border-top:0.5px solid var(--color-border-tertiary);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px;';
+  div.innerHTML = `
+    <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:2px">Edit details</div>
+    <div class="field-group" style="margin-bottom:0">
+      <div class="field-label">Home team</div>
+      <input class="field-input" id="edit-home-${id}" value="${h.home||''}" placeholder="Home team"/>
+    </div>
+    <div class="field-group" style="margin-bottom:0">
+      <div class="field-label">Away team</div>
+      <input class="field-input" id="edit-away-${id}" value="${h.away||''}" placeholder="Away team"/>
+    </div>
+    <div class="field-group" style="margin-bottom:0">
+      <div class="field-label">Stadium</div>
+      <input class="field-input" id="edit-stadium-${id}" value="${h.stadium||''}" placeholder="Stadium"/>
+    </div>
+    <div class="field-group" style="margin-bottom:0">
+      <div class="field-label">Score</div>
+      <input class="field-input" id="edit-score-${id}" value="${h.score||''}" placeholder="e.g. 6–4"/>
+    </div>
+    <div class="field-group" style="margin-bottom:0">
+      <div class="field-label">Notes</div>
+      <input class="field-input" id="edit-notes-${id}" value="${h.notes||''}" placeholder="Notes"/>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:2px">
+      <button class="btn small primary" onclick="saveEditRun(${id})">Save</button>
+      <button class="btn small" onclick="document.getElementById('edit-form-${id}').remove()">Cancel</button>
+    </div>`;
+  item.appendChild(div);
+}
+
+function saveEditRun(id) {
+  const hist = getHist();
+  const h = hist.find(x => x.id === id);
+  if (!h) return;
+  h.home    = document.getElementById('edit-home-' + id).value.trim() || h.home;
+  h.away    = document.getElementById('edit-away-' + id).value.trim() || h.away;
+  h.stadium = document.getElementById('edit-stadium-' + id).value.trim() || h.stadium;
+  h.score   = document.getElementById('edit-score-' + id).value.trim();
+  h.notes   = document.getElementById('edit-notes-' + id).value.trim();
+  putHist(hist);
+  renderHistory();
 }
 
 hydrate();
